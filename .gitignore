@@ -1,0 +1,6 @@
+.DS_Store
+.terraform
+*.swp
+terraform.tfstate
+terraform.tfstate.backup
+*.zip

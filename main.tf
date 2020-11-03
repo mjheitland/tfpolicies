@@ -86,9 +86,28 @@ resource "aws_iam_policy_attachment" "iam_policy_attachment" {
 }
 
 
+#--- Organizational Units
+
+data "aws_organizations_organization" "org" {}
+
+data "aws_organizations_organizational_units" "ou_0" {
+  parent_id = data.aws_organizations_organization.org.roots[0].id
+}
+
+resource "aws_organizations_organizational_unit" "my_ou_1" {
+  name      = "my_ou_1"
+  parent_id = data.aws_organizations_organization.org.roots[0].id
+}
+
+resource "aws_organizations_organizational_unit" "my_ou_2" {
+  name      = "my_ou_2"
+  parent_id = data.aws_organizations_organization.org.roots[0].id
+}
+
+
 #--- SCP
 
-data "aws_iam_policy_document" "myscp1" {
+data "aws_iam_policy_document" "my_scp_1" {
     statement {
         sid = "myscp1"
         effect = "Deny"
@@ -97,7 +116,7 @@ data "aws_iam_policy_document" "myscp1" {
     }
 }
 
-data "aws_iam_policy_document" "myscp2" {
+data "aws_iam_policy_document" "my_scp_2" {
     statement {
         sid = "myscp2"
         effect = "Deny"
@@ -106,53 +125,48 @@ data "aws_iam_policy_document" "myscp2" {
     }
 }
 
- module "aggregated_policy" {
+module "aggregated_policy_1" {
     source = "git::https://github.com/cloudposse/terraform-aws-iam-policy-document-aggregator.git?ref=master"
 
     source_documents = [
-      data.aws_iam_policy_document.myscp1.json,
-      data.aws_iam_policy_document.myscp2.json
+      data.aws_iam_policy_document.my_scp_1.json
     ]
 }
 
-resource "aws_organizations_policy" "myscp" {
-  name        = "tfpolicies_ou_scp"
-  description = "My SCP"
-  content     = module.aggregated_policy.result_document 
-# alternative 1: 
-#   content = data.aws_iam_policy_document.myscp2.json
-# alternative 2:
-#   content = <<CONTENT
-# {
-#   "Version": "2012-10-17",
-#   "Statement": {
-#     "Effect": "Allow",
-#     "Action": "*",
-#     "Resource": "*"
-#   }
-# }
-# CONTENT  
+module "aggregated_policy_1_2" {
+    source = "git::https://github.com/cloudposse/terraform-aws-iam-policy-document-aggregator.git?ref=master"
+
+    source_documents = [
+      data.aws_iam_policy_document.my_scp_1.json,
+      data.aws_iam_policy_document.my_scp_2.json
+    ]
 }
 
-data "aws_organizations_organization" "org" {}
-
-data "aws_organizations_organizational_units" "ou_0" {
-  parent_id = data.aws_organizations_organization.org.roots[0].id
+resource "aws_organizations_policy" "my_scp_1" {
+  name        = "tfpolicies_my_scp_1"
+  description = "My SCP 1"
+  content     = module.aggregated_policy_1.result_document 
 }
 
-resource "aws_organizations_organizational_unit" "my_ou" {
-  name      = "my_ou"
-  parent_id = data.aws_organizations_organization.org.roots[0].id
+resource "aws_organizations_policy" "my_scp_1_2" {
+  name        = "tfpolicies_my_scp_1_2"
+  description = "My SCP 1 2"
+  content     = module.aggregated_policy_1_2.result_document 
 }
 
-resource "aws_organizations_policy_attachment" "account_policy_attachment" {
-  policy_id = aws_organizations_policy.myscp.id
+resource "aws_organizations_policy_attachment" "account_policy_attachment_account" {
+  policy_id = aws_organizations_policy.my_scp_1.id
   target_id = data.aws_caller_identity.current.account_id
 }
 
-resource "aws_organizations_policy_attachment" "ou_policy_attachment" {
-  policy_id = aws_organizations_policy.myscp.id
-  target_id = aws_organizations_organizational_unit.my_ou.id # attach SCP to my_ou
+resource "aws_organizations_policy_attachment" "ou_policy_attachment_1" {
+  policy_id = aws_organizations_policy.my_scp_1.id
+  target_id = aws_organizations_organizational_unit.my_ou_1.id 
+}
+
+resource "aws_organizations_policy_attachment" "ou_policy_attachment_1_2" {
+  policy_id = aws_organizations_policy.my_scp_1_2.id
+  target_id = aws_organizations_organizational_unit.my_ou_2.id 
 }
 
 
@@ -166,10 +180,18 @@ output "ou_0" {
     value = data.aws_organizations_organizational_units.ou_0
 }
 
-output "my_ou_id" {
-    value = aws_organizations_organizational_unit.my_ou.id
+output "my_ou_1_id" {
+    value = aws_organizations_organizational_unit.my_ou_1.id
 }
 
-output "my_scp_id" {
-    value = aws_organizations_policy.myscp.id
+output "my_ou_2_id" {
+    value = aws_organizations_organizational_unit.my_ou_2.id
+}
+
+output "my_scp_1_id" {
+    value = aws_organizations_policy.my_scp_1.id
+}
+
+output "my_scp_1_2_id" {
+    value = aws_organizations_policy.my_scp_1_2.id
 }

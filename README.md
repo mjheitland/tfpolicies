@@ -10,10 +10,10 @@ Creates
 + 1 aws_iam_policy (combining multiple aws_iam_policy_documents into one policy)
 + 1 aws_iam_role.iam_role
 + 1 aws_iam_policy_attachment (linking policy and role)
-+ 1 aws_organizations_organizational_unit
-+ 1 aws_organizations_policy
++ 2 aws_organizations_organizational_unit
++ 2 aws_organizations_policy
 + 1 aws_organizations_policy_attachment (attaches SCP to account)
-+ 1 aws_organizations_policy_attachment (attaches SCP to organization unit)
++ 2 aws_organizations_policy_attachment (attaches SCP to organization unit)
 
 ## Links
 [Merging and Overriding IAM Policies in Terraform](https://blog.quigley.codes/merging-iam-in-terraform/) 
